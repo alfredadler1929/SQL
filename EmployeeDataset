@@ -1,0 +1,88 @@
+--Total Expences by department?
+
+select d.Department,round(sum(salary),0) as Total
+from EmployeeBase e
+left join departmentnew d
+on e.departmentid=d.DepartmentID
+group by d.Department
+
+--What is departments highest salary?
+
+with cte as (
+select departmentid,
+max(salary) over(partition by departmentid) as maxsalary
+from EmployeeBase 
+)
+select distinct departmentid,maxsalary
+from cte
+order by  departmentid asc
+
+--What is departments second highest salary?
+
+with cte as (
+select departmentid,salary,
+DENSE_RANK() over(partition by departmentid order by salary desc) as rnk
+
+from EmployeeBase
+)
+
+select distinct departmentid,salary
+from cte 
+where rnk=2
+
+--
+select * from EmployeeBase
+
+--how many employees are there by department and by gender?
+
+CREATE PROCEDURE CountEmployeesByGenderAndDepartment
+    @gender NVARCHAR(10),
+    @department INT
+AS
+BEGIN
+SELECT DepartmentID, COUNT(*) AS EmployeeCount
+FROM 
+EmployeeBase
+WHERE 
+Gender = @gender
+AND DepartmentID = @department
+GROUP BY 
+DepartmentID;
+END;
+
+EXEC CountEmployeesByGenderAndDepartment @gender = 'Male', @department = 2;
+
+--Total count of employees by gender?
+
+DECLARE @gender2 NVARCHAR(10) = 'Male';  
+SELECT 
+@gender2 AS Gender,
+COUNT(*) AS EmployeeCount
+FROM 
+EmployeeBase
+WHERE 
+Gender = @gender2;
+
+select * from EmployeeBase
+
+--Company changed mail domain to gmail, every mail has to be update
+
+UPDATE EmployeeBase
+SET mail = STUFF(mail, CHARINDEX('@', mail) + 1, LEN(mail) - CHARINDEX('@', mail), 'gmail.com')
+WHERE mail LIKE '%@bilearner.com';
+
+
+-- Bonus calculation
+   --working more than 4 years 10% of salary
+   --working from 2 to 4 years 5% of salary
+   -- otherwise 0
+
+select id,salary,DATEDIFF(year,startdate,getdate()) as TotalWorked,
+case 
+ when DATEDIFF(year,startdate,getdate())>4 then salary+salary*0.01
+ when DATEDIFF(year,startdate,getdate())<2 then salary
+ else salary *0.05
+ end as totalsalarywithbonus
+
+from EmployeeBase
+where exitdate is null
